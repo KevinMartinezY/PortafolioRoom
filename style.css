@@ -1,0 +1,383 @@
+/* ============ BASE ============ */
+:root { --noche: #0b1030; }
+
+* { box-sizing: border-box; }
+
+/* Sin barra de desplazamiento (el scroll sigue funcionando) */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar { display: none; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--noche);
+}
+
+/* ============ SALA ============ */
+/* Todo se mide en % o cqw (1cqw = 1% del ancho de la sala),
+   así que al cambiar de tamaño nada se desalinea. */
+.sala {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  container-type: inline-size;
+  overflow: hidden;
+}
+
+.sala-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sala > :not(.sala-img) { position: absolute; }
+
+/* ============ MODO OSCURO: CAPAS ============ */
+.sala-noche {
+  inset: 0;
+  background: var(--noche);
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transition: opacity .8s;
+  pointer-events: none;
+  z-index: 1;
+}
+.sala.oscuro .sala-noche { opacity: .78; }
+
+/* Luz que escapa de la pantalla hacia la sala */
+.sala-luz {
+  left: 35%; top: 0; width: 65%; height: 90%;
+  background: radial-gradient(ellipse at 75% 40%, rgba(170, 200, 255, .38), transparent 65%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity .8s;
+  pointer-events: none;
+  z-index: 2;
+}
+.sala.oscuro .sala-luz { opacity: 1; }
+
+/* Resplandor de la lámpara de lava (solo en modo oscuro) */
+.lava-glow {
+  left: 4%; top: 56%; width: 16.2%; height: 34%;
+  background: radial-gradient(ellipse, rgba(255, 150, 40, .65), rgba(255, 100, 20, .18) 45%, transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity .8s;
+  pointer-events: none;
+  z-index: 2;
+}
+.sala.oscuro .lava-glow {
+  opacity: 1;
+  animation: lava 4s ease-in-out infinite;
+}
+@keyframes lava {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.25); }
+}
+
+/* ============ PANTALLA ============ */
+/* Caja que envuelve la pantalla: el glow va aquí para que el clip-path no lo recorte */
+.pantalla-wrap {
+  left: 58.48%; top: 20.32%; width: 35.47%; height: 42.11%;
+  z-index: 3;
+  transition: filter .8s;
+}
+.sala.oscuro .pantalla-wrap {
+  filter: drop-shadow(0 0 2cqw rgba(160, 190, 255, .55));
+}
+
+/* clip-path imita la perspectiva de la pantalla de la imagen */
+.pantalla {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  clip-path: polygon(0.45% 15.27%, 99.55% 0%, 100% 100%, 0% 96.35%);
+  overflow: hidden;
+}
+
+/* Capa proyectada: el JS le aplica un matrix3d para calzar con la tela */
+.proyeccion {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  transform-origin: 0 0;
+}
+
+.vista-inicio,
+.vista-proyectos {
+  position: absolute;
+  inset: 0;
+  transition: opacity .5s, visibility .5s;
+}
+
+/* ----- Vista inicial (play) ----- */
+.vista-inicio {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 1.4cqw;
+}
+.sala.oscuro .vista-inicio {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.play {
+  position: relative;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #4a4a55;
+  font-size: 6.5cqw;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  transition: transform .25s, color .25s;
+}
+.play i { margin-left: 0; line-height: 1; }
+
+.play:hover,
+.play:focus-visible {
+  transform: scale(1.1);
+  color: #2b2b33;
+  outline: none;
+}
+
+.play-texto {
+  font-size: max(10px, 1.1cqw);
+  color: #4a4a55;
+  letter-spacing: .08em;
+  text-transform: uppercase; 
+}
+
+/* ----- Vista proyectos (carrusel) ----- */
+.vista-proyectos {
+  opacity: 0;
+  visibility: hidden;
+  background: #f6f8ff;
+  transition-delay: .3s;
+}
+.sala.oscuro .vista-proyectos {
+  opacity: 1;
+  visibility: visible;
+}
+
+.vista-proyectos .carousel,
+.vista-proyectos .carousel-inner,
+.vista-proyectos .carousel-item { height: 100%; }
+
+.proyecto {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--c, #888);
+  color: #fff;
+  font-weight: 700;
+  font-size: 3cqw;
+  text-decoration: none;
+  overflow: hidden;
+}
+.proyecto:hover { color: #fff; filter: brightness(1.08); }
+.proyecto img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Flechas del carrusel: sobre el marco de la pantalla, translúcidas */
+.flecha {
+  z-index: 4;
+  width: 1.7cqw;
+  height: 5cqw;
+  transform: translate(-50%, -50%);
+  border: .1cqw solid rgba(255, 255, 255, .3);
+  border-radius: 1cqw;
+  background: rgba(255, 255, 255, .14);
+  color: rgba(255, 255, 255, .75);
+  font-size: 1.1cqw;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  backdrop-filter: blur(2px);
+  transition: opacity .5s .3s, visibility .5s .3s,
+              background .25s, color .25s, border-color .25s;
+}
+.flecha i { line-height: 1; }
+.flecha-prev { left: 58.05%; top: 43.75%; }
+.flecha-next { left: 94.69%; top: 41.39%; }
+.sala.oscuro .flecha { opacity: 1; visibility: visible; }
+.flecha:hover,
+.flecha:focus-visible {
+  background: rgba(11, 16, 48, .9);
+  border-color: rgba(255, 255, 255, .6);
+  color: #fff;
+  outline: none;
+}
+
+/* Botón para volver al modo luz: vive sobre el proyector,
+   semitransparente, y se oscurece al acercar el cursor */
+.apagar {
+  left: 68.6%;
+  top: 15.5%;
+  z-index: 4;
+  width: 3cqw;
+  height: 3cqw;
+  transform: translate(-50%, -50%);
+  border: .1cqw solid rgba(255, 255, 255, .35);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .16);
+  color: rgba(255, 255, 255, .75);
+  font-size: 1.6cqw;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  backdrop-filter: blur(2px);
+  transition: opacity .5s .3s, visibility .5s .3s,
+              background .25s, color .25s, border-color .25s;
+}
+.sala.oscuro .apagar { opacity: 1; visibility: visible; }
+.apagar:hover,
+.apagar:focus-visible {
+  background: rgba(11, 16, 48, .9);
+  border-color: rgba(255, 255, 255, .6);
+  color: #fff;
+  outline: none;
+}
+
+/* ============ PÓSTERS ============ */
+/* Cada póster ocupa la caja que rodea a su marco y se recorta con
+   un polígono en perspectiva (--p = contorno, --pi = interior).
+   Valores medidos sobre sala.png (1280x720). */
+.poster {
+  z-index: 3;
+  display: block;
+  color: #4a4a55;
+  text-decoration: none;
+  transition: transform .25s, filter .6s, color .6s;
+}
+
+.p1 { left:6.33%;  top:20.24%; width:11.18%; height:34.90%;
+  --p: polygon(2.13% 0.00%, 98.58% 7.78%, 100.00% 99.59%, 0.00% 100.00%);
+  --pi: polygon(6.96% 3.20%, 93.72% 10.20%, 95.06% 96.83%, 4.95% 97.19%);
+  --cx:50.18%; --cy:51.85%; font-size: 4.4cqw; }
+.p2 { left:22.50%; top:24.26%; width:8.67%;  height:30.60%;
+  --p: polygon(1.84% 0.00%, 98.17% 7.07%, 100.00% 99.53%, 0.00% 100.00%);
+  --pi: polygon(8.07% 3.67%, 91.92% 9.82%, 93.63% 96.38%, 6.36% 96.79%);
+  --cx:50.00%; --cy:51.65%; font-size: 3.4cqw; }
+.p3 { left:35.08%; top:27.60%; width:7.04%;  height:27.13%;
+  --p: polygon(2.27% 0.00%, 96.60% 5.91%, 100.00% 99.46%, 0.00% 100.00%);
+  --pi: polygon(9.95% 4.10%, 88.94% 9.04%, 92.10% 95.92%, 7.86% 96.37%);
+  --cx:49.72%; --cy:51.35%; font-size: 2.8cqw; }
+.p4 { left:45.15%; top:30.08%; width:5.79%;  height:24.50%;
+  --p: polygon(2.77% 0.00%, 97.24% 7.21%, 100.00% 99.40%, 0.00% 100.00%);
+  --pi: polygon(12.09% 4.74%, 87.88% 10.53%, 90.43% 95.49%, 9.57% 95.97%);
+  --cx:50.00%; --cy:51.66%; font-size: 2.4cqw; }
+
+/* Cara del póster: borde (fondo = color neón) + interior (::before) */
+.poster-cara {
+  position: absolute;
+  inset: 0;
+  clip-path: var(--p);
+}
+.poster-cara::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: var(--pi);
+  background: transparent;
+  transition: background .6s;
+}
+.poster-cara i {
+  position: absolute;
+  left: var(--cx);
+  top: var(--cy);
+  transform: translate(-50%, -50%);
+  line-height: 1;
+}
+
+/* Etiqueta que aparece al pasar el cursor */
+.poster::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  font-size: max(9px, 1cqw);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .25s;
+}
+.poster:hover::after,
+.poster:focus-visible::after { opacity: 1; }
+
+/* Neón en modo oscuro */
+.sala.oscuro .poster {
+  color: var(--neon);
+  filter: drop-shadow(0 0 .4cqw var(--neon)) drop-shadow(0 0 1.3cqw var(--neon));
+  animation: parpadeo 5s infinite;
+}
+.sala.oscuro .poster-cara { background: var(--neon); }
+.sala.oscuro .poster-cara::before {
+  background: color-mix(in srgb, var(--neon) 9%, #0b1030);
+}
+.sala.oscuro .poster i {
+  text-shadow: 0 0 .5cqw var(--neon), 0 0 1.6cqw var(--neon);
+}
+.sala.oscuro .p2 { animation-delay: -1.3s; }
+.sala.oscuro .p3 { animation-delay: -2.6s; }
+.sala.oscuro .p4 { animation-delay: -3.9s; }
+
+.poster:hover,
+.poster:focus-visible { transform: scale(1.05); outline: none; }
+.sala.oscuro .poster:hover,
+.sala.oscuro .poster:focus-visible {
+  filter: drop-shadow(0 0 .7cqw var(--neon)) drop-shadow(0 0 2cqw var(--neon));
+}
+
+@keyframes parpadeo {
+  0%, 92%, 100% { opacity: 1; }
+  94%           { opacity: .8; }
+  96%           { opacity: 1; }
+  97%           { opacity: .85; }
+}
+
+/* Respeta a quien prefiere menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+.proyecto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.proyecto video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #0b1030;
+  display: block;
+}
